@@ -3,57 +3,413 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0f14" />
   <title>Parlay Pulse</title>
   <link rel="manifest" href="manifest.json" />
+
   <style>
+    :root {
+      --background: #0b0f14;
+      --surface: #151d27;
+      --surface-2: #1c2733;
+      --text: #f8fafc;
+      --muted: #a6b1bd;
+      --green: #4ade80;
+      --red: #fb7185;
+      --border: #293746;
+    }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: -apple-system, system-ui, sans-serif;
-      background: #0b0f14;
-      color: #fff;
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+        "Segoe UI", sans-serif;
     }
+
     header {
-      padding: 18px;
-      background: #101821;
-      font-weight: 700;
-      font-size: 20px;
-    }
-    main { padding: 16px; }
-    .card {
-      background: #151d27;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-    .progress {
-      font-size: 28px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 18px 16px;
+      background: rgba(16, 24, 33, 0.96);
+      border-bottom: 1px solid var(--border);
+      font-size: 22px;
       font-weight: 800;
-      color: #4ade80;
     }
-    button {
+
+    main {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 16px 16px 110px;
+    }
+
+    .subheading {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      margin-bottom: 12px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .parlay-name {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .progress {
+      color: var(--green);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .leg {
+      padding: 11px 0;
+      border-top: 1px solid var(--border);
+      color: #dce5ee;
+      font-size: 14px;
+    }
+
+    .leg:first-of-type { margin-top: 12px; }
+
+    .status {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .button {
       width: 100%;
       padding: 14px;
       border: 0;
-      border-radius: 12px;
-      background: #22c55e;
-      color: #04140a;
-      font-weight: 700;
+      border-radius: 13px;
+      background: var(--green);
+      color: #05270f;
       font-size: 16px;
+      font-weight: 800;
+    }
+
+    .button.secondary {
+      margin-top: 10px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .button.danger {
+      margin-top: 10px;
+      background: transparent;
+      color: var(--red);
+      border: 1px solid #70303c;
+    }
+
+    .hidden { display: none; }
+
+    label {
+      display: block;
+      margin: 16px 0 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 13px;
+      color: var(--text);
+      background: #0e151d;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      font: inherit;
+    }
+
+    .leg-form {
+      margin-top: 14px;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #111923;
+    }
+
+    .leg-form h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+
+    .remove-leg {
+      margin-top: 12px;
+      padding: 9px;
+      border: 0;
+      border-radius: 9px;
+      background: #42212a;
+      color: #fecdd3;
+      font-weight: 700;
+    }
+
+    .empty {
+      padding: 32px 16px;
+      color: var(--muted);
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+      background: rgba(11, 15, 20, 0.95);
+      border-top: 1px solid var(--border);
+    }
+
+    .bottom-bar-inner {
+      max-width: 650px;
+      margin: 0 auto;
     }
   </style>
 </head>
+
 <body>
   <header>Parlay Pulse</header>
+
   <main>
-    <div class="card">
-      <div>Today’s Parlay</div>
-      <div class="progress">0/4</div>
-      <div>No legs have hit yet.</div>
-    </div>
-    <button onclick="alert('Next we will add the New Parlay screen.')">
-      + New Parlay
-    </button>
+    <section id="home-screen">
+      <p class="subheading">Track your soccer parlays in one place.</p>
+      <div id="parlay-list"></div>
+    </section>
+
+    <section id="form-screen" class="hidden">
+      <button class="button secondary" onclick="showHome()">← Back to My Parlays</button>
+      <h2>New Parlay</h2>
+
+      <label for="parlay-name">Parlay name</label>
+      <input id="parlay-name" type="text" placeholder="Example: Tuesday Soccer" />
+
+      <div id="leg-forms"></div>
+
+      <button class="button secondary" id="add-leg-button" onclick="addLeg()">
+        + Add another leg
+      </button>
+
+      <button class="button" style="margin-top: 14px;" onclick="saveParlay()">
+        Save Parlay
+      </button>
+    </section>
   </main>
+
+  <div id="home-bar" class="bottom-bar">
+    <div class="bottom-bar-inner">
+      <button class="button" onclick="showForm()">+ New Parlay</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "parlay-pulse-parlays";
+    let currentLegCount = 0;
+
+    function getParlays() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    }
+
+    function saveParlays(parlays) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parlays));
+    }
+
+    function showHome() {
+      document.getElementById("home-screen").classList.remove("hidden");
+      document.getElementById("form-screen").classList.add("hidden");
+      document.getElementById("home-bar").classList.remove("hidden");
+      renderParlays();
+    }
+
+    function showForm() {
+      document.getElementById("home-screen").classList.add("hidden");
+      document.getElementById("form-screen").classList.remove("hidden");
+      document.getElementById("home-bar").classList.add("hidden");
+
+      document.getElementById("parlay-name").value = "";
+      document.getElementById("leg-forms").innerHTML = "";
+      currentLegCount = 0;
+      addLeg();
+      addLeg();
+    }
+
+    function addLeg() {
+      if (currentLegCount >= 4) {
+        alert("A parlay can have up to 4 legs for now.");
+        return;
+      }
+
+      currentLegCount += 1;
+      const number = currentLegCount;
+      const container = document.getElementById("leg-forms");
+
+      container.insertAdjacentHTML("beforeend", `
+        <div class="leg-form" id="leg-${number}">
+          <h3>Leg ${number}</h3>
+
+          <label>Home team</label>
+          <input class="home-team" type="text" placeholder="Example: Barcelona" />
+
+          <label>Away team</label>
+          <input class="away-team" type="text" placeholder="Example: Real Madrid" />
+
+          <label>Market</label>
+          <select class="market">
+            <option value="Team to win">Team to win</option>
+            <option value="Over 2.5 goals">Over 2.5 goals</option>
+            <option value="Under 2.5 goals">Under 2.5 goals</option>
+            <option value="Player to score anytime">Player to score anytime</option>
+          </select>
+
+          <label>Pick / player</label>
+          <input class="pick" type="text" placeholder="Example: Barcelona or Messi" />
+
+          <button class="remove-leg" onclick="removeLeg(${number})">Remove leg</button>
+        </div>
+      `);
+
+      updateAddButton();
+    }
+
+    function removeLeg(number) {
+      const leg = document.getElementById(`leg-${number}`);
+      if (leg) leg.remove();
+      updateAddButton();
+    }
+
+    function updateAddButton() {
+      const totalLegs = document.querySelectorAll(".leg-form").length;
+      document.getElementById("add-leg-button").style.display =
+        totalLegs >= 4 ? "none" : "block";
+    }
+
+    function saveParlay() {
+      const name = document.getElementById("parlay-name").value.trim() || "My Soccer Parlay";
+      const formLegs = document.querySelectorAll(".leg-form");
+
+      if (formLegs.length < 2) {
+        alert("Please add at least 2 legs.");
+        return;
+      }
+
+      const legs = [];
+
+      for (const form of formLegs) {
+        const home = form.querySelector(".home-team").value.trim();
+        const away = form.querySelector(".away-team").value.trim();
+        const market = form.querySelector(".market").value;
+        const pick = form.querySelector(".pick").value.trim();
+
+        if (!home || !away || !pick) {
+          alert("Fill out the teams and your pick for every leg.");
+          return;
+        }
+
+        legs.push({
+          home,
+          away,
+          market,
+          pick,
+          status: "pending"
+        });
+      }
+
+      const parlays = getParlays();
+      parlays.unshift({
+        id: Date.now(),
+        name,
+        legs,
+        createdAt: new Date().toLocaleDateString()
+      });
+
+      saveParlays(parlays);
+      showHome();
+    }
+
+    function deleteParlay(id) {
+      const confirmed = confirm("Delete this parlay?");
+      if (!confirmed) return;
+
+      const updated = getParlays().filter(parlay => parlay.id !== id);
+      saveParlays(updated);
+      renderParlays();
+    }
+
+    function renderParlays() {
+      const list = document.getElementById("parlay-list");
+      const parlays = getParlays();
+
+      if (parlays.length === 0) {
+        list.innerHTML = `
+          <div class="empty">
+            No parlays yet.<br />
+            Tap <strong>+ New Parlay</strong> to add your first one.
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = parlays.map(parlay => {
+        const hitCount = parlay.legs.filter(leg => leg.status === "hit").length;
+        const legText = parlay.legs.map(leg => `
+          <div class="leg">
+            ${leg.home} vs ${leg.away}<br />
+            <strong>${leg.market}: ${leg.pick}</strong>
+          </div>
+        `).join("");
+
+        return `
+          <article class="card">
+            <div class="card-top">
+              <div>
+                <h2 class="parlay-name">${escapeHtml(parlay.name)}</h2>
+                <div class="status">Created ${parlay.createdAt}</div>
+              </div>
+              <div class="progress">${hitCount}/${parlay.legs.length}</div>
+            </div>
+
+            ${legText}
+
+            <div class="status">Live score tracking will be connected next.</div>
+            <button class="button danger" onclick="deleteParlay(${parlay.id})">
+              Delete Parlay
+            </button>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+
+    renderParlays();
+  </script>
 </body>
 </html>
